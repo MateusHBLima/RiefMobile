@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { colors } from '@/constants/Colors';
+import { AuthProvider } from '@/lib/auth';
 import { registerForPushNotificationsAsync, setupDefaultNotifications } from '@/lib/notifications';
 
 export {
@@ -14,7 +15,7 @@ export {
 } from 'expo-router';
 
 export const unstable_settings = {
-  initialRouteName: '(tabs)',
+  initialRouteName: 'login',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -64,24 +65,28 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={RiefDarkTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="respond/[trackerId]"
-          options={{
-            presentation: 'modal',
-            animation: 'fade',
-          }}
-        />
-        <Stack.Screen
-          name="daystate"
-          options={{
-            presentation: 'modal',
-            animation: 'slide_from_bottom',
-          }}
-        />
-      </Stack>
+      <AuthProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="login" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="respond/[trackerId]"
+            options={{
+              presentation: 'modal',
+              animation: 'fade',
+            }}
+          />
+          <Stack.Screen
+            name="daystate"
+            options={{
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
+        </Stack>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
+
 
