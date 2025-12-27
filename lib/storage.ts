@@ -3,7 +3,8 @@ import { getCurrentUserId, supabase } from './supabase';
 import {
     Area,
     DayState, PREDEFINED_DAY_STATES,
-    Tracker
+    Tracker,
+    TrackersByArea
 } from './types';
 
 // ============================================
@@ -44,42 +45,59 @@ export async function getStructure(): Promise<Area[]> {
 // ============================================
 
 export async function getTodayTrackers(dateString: string): Promise<Tracker[]> {
+    const grouped = await getTodayTrackersByArea(dateString);
+    return grouped.flatMap(g => g.trackers);
+}
+
+export async function getTodayTrackersByArea(dateString: string): Promise<TrackersByArea[]> {
     const userId = await getCurrentUserId();
     if (!userId) return [];
 
-    // Get all active trackers
+    // Get all active trackers with area info
     const { data: areas, error } = await supabase
         .from('Area')
         .select(`
-      objectives:Objective!inner(
-        trackers:Tracker(*)
-      )
-    `)
+            id,
+            name,
+            objectives:Objective!inner(
+                trackers:Tracker(*)
+            )
+        `)
         .eq('userId', userId)
-        .eq('objectives.status', 'ACTIVE');
+        .eq('objectives.status', 'ACTIVE')
+        .order('order', { ascending: true });
 
     if (error || !areas) return [];
 
-    // Flatten and filter by rhythm
+    // Filter by rhythm and group by area
     const today = parseISO(dateString);
     const dayOfWeek = today.getDay();
     const dayOfMonth = today.getDate();
 
-    const allTrackers: Tracker[] = [];
+    const result: TrackersByArea[] = [];
 
     areas.forEach((area: any) => {
+        const areaTrackers: Tracker[] = [];
+
         area.objectives?.forEach((obj: any) => {
             obj.trackers?.forEach((tracker: any) => {
-                // Check rhythm
                 const shouldShow = shouldShowTrackerToday(tracker, dayOfWeek, dayOfMonth);
                 if (shouldShow) {
-                    allTrackers.push(tracker);
+                    areaTrackers.push(tracker);
                 }
             });
         });
+
+        if (areaTrackers.length > 0) {
+            result.push({
+                areaId: area.id,
+                areaName: area.name,
+                trackers: areaTrackers
+            });
+        }
     });
 
-    return allTrackers;
+    return result;
 }
 
 function shouldShowTrackerToday(tracker: Tracker, dayOfWeek: number, dayOfMonth: number): boolean {
@@ -111,7 +129,7 @@ export async function getLogsForDate(dateString: string): Promise<Record<string,
     if (!userId) return {};
 
     const { data, error } = await supabase
-        .from('TrackerLog')
+        .from('DailyLog')
         .select('trackerId, value')
         .eq('date', dateString);
 
@@ -135,7 +153,7 @@ export async function saveLog(
 
     // Upsert log
     const { error } = await supabase
-        .from('TrackerLog')
+        .from('DailyLog')
         .upsert({
             trackerId,
             date: dateString,
@@ -240,3 +258,4 @@ export function getTodayString(): string {
 }
 
 export { PREDEFINED_DAY_STATES };
+

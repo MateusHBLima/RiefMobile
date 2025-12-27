@@ -18,15 +18,15 @@ import {
   getDayState,
   getLogsForDate,
   getTodayString,
-  getTodayTrackers,
+  getTodayTrackersByArea,
 } from '@/lib/storage';
-import { DayState, REFLECTION_PROMPTS, Tracker } from '@/lib/types';
+import { DayState, REFLECTION_PROMPTS, Tracker, TrackersByArea } from '@/lib/types';
 
 export default function TodayScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [trackers, setTrackers] = useState<Tracker[]>([]);
+  const [trackersByArea, setTrackersByArea] = useState<TrackersByArea[]>([]);
   const [logs, setLogs] = useState<Record<string, number>>({});
   const [dayState, setDayState] = useState<DayState | null>(null);
 
@@ -36,12 +36,12 @@ export default function TodayScreen() {
   const loadData = useCallback(async () => {
     try {
       const [trackersData, logsData, stateData] = await Promise.all([
-        getTodayTrackers(todayString),
+        getTodayTrackersByArea(todayString),
         getLogsForDate(todayString),
         getDayState(todayString),
       ]);
 
-      setTrackers(trackersData);
+      setTrackersByArea(trackersData);
       setLogs(logsData);
       setDayState(stateData);
     } catch (error) {
@@ -74,6 +74,11 @@ export default function TodayScreen() {
     ? REFLECTION_PROMPTS[dayState.label]
     : null;
 
+  // Count totals
+  const totalTrackers = trackersByArea.reduce((sum, area) => sum + area.trackers.length, 0);
+  const completedTrackers = trackersByArea.reduce((sum, area) =>
+    sum + area.trackers.filter(t => logs[t.id] !== undefined).length, 0);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -90,6 +95,11 @@ export default function TodayScreen() {
         {/* Date Header */}
         <View style={styles.header}>
           <Text style={styles.dateText}>{todayFormatted}</Text>
+          {totalTrackers > 0 && (
+            <Text style={styles.progressText}>
+              {completedTrackers}/{totalTrackers} práticas
+            </Text>
+          )}
         </View>
 
         {/* Day State Banner */}
@@ -119,25 +129,29 @@ export default function TodayScreen() {
           )}
         </Pressable>
 
-        {/* Trackers Section */}
-        {trackers.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Práticas do Dia</Text>
-            <View style={styles.trackerList}>
-              {trackers.map((tracker) => (
-                <TrackerCard
-                  key={tracker.id}
-                  tracker={tracker}
-                  value={logs[tracker.id]}
-                  onPress={() => handleTrackerPress(tracker)}
-                />
-              ))}
-            </View>
+        {/* Trackers by Area */}
+        {trackersByArea.length > 0 && (
+          <View style={styles.areasContainer}>
+            {trackersByArea.map((area) => (
+              <View key={area.areaId} style={styles.areaSection}>
+                <Text style={styles.areaTitle}>{area.areaName}</Text>
+                <View style={styles.trackerList}>
+                  {area.trackers.map((tracker) => (
+                    <TrackerCard
+                      key={tracker.id}
+                      tracker={tracker}
+                      value={logs[tracker.id]}
+                      onPress={() => handleTrackerPress(tracker)}
+                    />
+                  ))}
+                </View>
+              </View>
+            ))}
           </View>
         )}
 
         {/* Empty State */}
-        {!loading && trackers.length === 0 && (
+        {!loading && trackersByArea.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>🌱</Text>
             <Text style={styles.emptyTitle}>Nenhuma prática para hoje</Text>
@@ -162,10 +176,18 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   dateText: {
     ...typography.title,
+    fontSize: 24,
     textTransform: 'capitalize',
+  },
+  progressText: {
+    fontSize: 14,
+    color: colors.textMuted,
   },
 
   // Day State
@@ -222,16 +244,17 @@ const styles = StyleSheet.create({
     color: colors.textDim,
   },
 
-  // Sections
-  section: {
+  // Areas Container
+  areasContainer: {
+    gap: spacing.xl,
+  },
+  areaSection: {
     gap: spacing.md,
   },
-  sectionTitle: {
-    fontSize: 13,
+  areaTitle: {
+    fontSize: 18,
     fontWeight: '600',
-    color: colors.textDim,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    color: colors.primary,
     marginLeft: spacing.xs,
   },
   trackerList: {

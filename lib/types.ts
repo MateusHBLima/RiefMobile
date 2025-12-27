@@ -46,6 +46,12 @@ export interface Tracker {
     indicatorEnabled: boolean;
 }
 
+export interface TrackersByArea {
+    areaId: string;
+    areaName: string;
+    trackers: Tracker[];
+}
+
 export interface TrackerLog {
     id: string;
     trackerId: string;
