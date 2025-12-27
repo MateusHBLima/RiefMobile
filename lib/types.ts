@@ -39,6 +39,7 @@ export interface Tracker {
     maxLabel?: string;
     habitBad?: string;
     habitGood?: string;
+    description?: string;
     daysOfWeek?: string; // "0,1,3" for Sun, Mon, Wed
     dayOfMonth?: number;
     interval?: number;

@@ -54,6 +54,9 @@ export default function TrackerCard({ tracker, value, onPress }: TrackerCardProp
         >
             <View style={styles.content}>
                 <Text style={styles.name}>{tracker.name}</Text>
+                {tracker.description && (
+                    <Text style={styles.description}>{tracker.description}</Text>
+                )}
                 {tracker.minLabel && tracker.maxLabel && (
                     <Text style={styles.hint}>
                         {tracker.minLabel} ↔ {tracker.maxLabel}
@@ -89,6 +92,11 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: '500',
         color: colors.text,
+    },
+    description: {
+        fontSize: 13,
+        color: colors.textMuted,
+        fontStyle: 'italic',
     },
     hint: {
         fontSize: 12,
