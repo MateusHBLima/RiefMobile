@@ -44,9 +44,11 @@
       "typedRoutes": true
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "rief-mobile"
+        "projectId": "f9489ba4-f8fe-4801-b51a-03470461fccc"
       }
-    }
+    },
+    "owner": "chico_cabeca"
   }
 }
